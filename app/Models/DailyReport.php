@@ -16,6 +16,7 @@ class DailyReport extends Model
         'module_id',
         'report_date',
         'progress_text',
+        'image_path',
         'linked_feature_id',
     ];
 

@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\DailyReportResource\Pages;
 use App\Models\DailyReport;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -13,6 +14,7 @@ use Filament\Resources\Resource;
 use Filament\Tables\Actions\BulkActionGroup;
 use Filament\Tables\Actions\DeleteBulkAction;
 use Filament\Tables\Actions\EditAction;
+use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -51,6 +53,14 @@ class DailyReportResource extends Resource
                     ->required()
                     ->rows(6)
                     ->columnSpanFull(),
+                FileUpload::make('image_path')
+                    ->label('Image')
+                    ->image()
+                    ->disk('public')
+                    ->directory('daily-reports')
+                    ->imagePreviewHeight('200')
+                    ->maxSize(5120)
+                    ->columnSpanFull(),
             ]);
     }
 
@@ -70,6 +80,11 @@ class DailyReportResource extends Resource
                     ->sortable(),
                 TextColumn::make('module.name')
                     ->label('Module')
+                    ->toggleable(),
+                ImageColumn::make('image_path')
+                    ->label('Image')
+                    ->disk('public')
+                    ->square()
                     ->toggleable(),
                 TextColumn::make('progress_text')
                     ->limit(60),
