@@ -1,0 +1,119 @@
+<?php
+
+namespace App\Filament\Resources;
+
+use App\Filament\Resources\DailyReportResource\Pages;
+use App\Models\DailyReport;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Form;
+use Filament\Resources\Resource;
+use Filament\Tables\Actions\BulkActionGroup;
+use Filament\Tables\Actions\DeleteBulkAction;
+use Filament\Tables\Actions\EditAction;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+
+class DailyReportResource extends Resource
+{
+    protected static ?string $model = DailyReport::class;
+
+    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+
+    public static function form(Form $form): Form
+    {
+        return $form
+            ->schema([
+                Hidden::make('user_id')
+                    ->default(fn (): ?int => auth()->id()),
+                Select::make('project_id')
+                    ->relationship('project', 'name')
+                    ->searchable()
+                    ->preload()
+                    ->required(),
+                Select::make('module_id')
+                    ->relationship('module', 'name')
+                    ->searchable()
+                    ->preload()
+                    ->nullable(),
+                Select::make('linked_feature_id')
+                    ->relationship('linkedFeature', 'feature_name')
+                    ->searchable()
+                    ->preload()
+                    ->nullable(),
+                DatePicker::make('report_date')
+                    ->default(now())
+                    ->required(),
+                Textarea::make('progress_text')
+                    ->required()
+                    ->rows(6)
+                    ->columnSpanFull(),
+            ]);
+    }
+
+    public static function table(Table $table): Table
+    {
+        return $table
+            ->columns([
+                TextColumn::make('report_date')
+                    ->date()
+                    ->sortable(),
+                TextColumn::make('user.name')
+                    ->label('Developer')
+                    ->searchable(),
+                TextColumn::make('project.name')
+                    ->label('Project')
+                    ->searchable()
+                    ->sortable(),
+                TextColumn::make('module.name')
+                    ->label('Module')
+                    ->toggleable(),
+                TextColumn::make('progress_text')
+                    ->limit(60),
+            ])
+            ->filters([
+            ])
+            ->actions([
+                EditAction::make(),
+            ])
+            ->bulkActions([
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
+                ]),
+            ]);
+    }
+
+    public static function getRelations(): array
+    {
+        return [
+        ];
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+        $user = auth()->user();
+
+        if ($user?->role === 'developer') {
+            return $query->where('user_id', $user->id);
+        }
+
+        if ($user?->role === 'lead') {
+            return $query->whereHas('project.leads', fn (Builder $leadQuery) => $leadQuery->whereKey($user->id));
+        }
+
+        return $query;
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => Pages\ListDailyReports::route('/'),
+            'create' => Pages\CreateDailyReport::route('/create'),
+            'edit' => Pages\EditDailyReport::route('/{record}/edit'),
+        ];
+    }
+}
