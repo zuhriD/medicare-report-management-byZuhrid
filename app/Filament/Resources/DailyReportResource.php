@@ -19,6 +19,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Filesystem\FilesystemAdapter;
+use Illuminate\Support\Facades\Storage;
 
 class DailyReportResource extends Resource
 {
@@ -57,7 +58,7 @@ class DailyReportResource extends Resource
                 FileUpload::make('image_path')
                     ->label('Image')
                     ->image()
-                    ->disk('public')
+                    ->disk(fn (): string => self::publicFileDisk())
                     ->directory('daily-reports')
                     ->imagePreviewHeight('200')
                     ->getUploadedFileUsing(function (FileUpload $component, string $file): ?array {
@@ -72,7 +73,7 @@ class DailyReportResource extends Resource
                             'name' => basename($file),
                             'size' => $storage->size($file),
                             'type' => $storage->mimeType($file),
-                            'url' => self::publicStorageUrl($file),
+                            'url' => self::publicStorageUrl($file, $component->getDiskName()),
                         ];
                     })
                     ->maxSize(5120)
@@ -100,7 +101,7 @@ class DailyReportResource extends Resource
                 ImageColumn::make('image_path')
                     ->label('Image')
                     ->getStateUsing(fn (DailyReport $record): ?string => $record->image_path
-                        ? self::publicStorageUrl($record->image_path)
+                        ? self::publicStorageUrl($record->image_path, self::publicFileDisk())
                         : null)
                     ->square()
                     ->toggleable(),
@@ -125,10 +126,32 @@ class DailyReportResource extends Resource
         ];
     }
 
-    private static function publicStorageUrl(string $path): string
+    private static function publicFileDisk(): string
+    {
+        return config('filesystems.public_disk', 'public');
+    }
+
+    private static function publicStorageUrl(string $path, string $disk): string
     {
         if (filter_var($path, FILTER_VALIDATE_URL) !== false) {
             return $path;
+        }
+
+        if ($disk !== 'public') {
+            $diskConfig = config("filesystems.disks.{$disk}", []);
+
+            if (filled($diskConfig['url'] ?? null)) {
+                return rtrim($diskConfig['url'], '/').'/'.ltrim($path, '/');
+            }
+
+            if ($disk === 'gcs' && filled($diskConfig['bucket'] ?? null)) {
+                $prefix = trim($diskConfig['path_prefix'] ?? '', '/');
+                $prefixedPath = trim($prefix.'/'.$path, '/');
+
+                return 'https://storage.googleapis.com/'.$diskConfig['bucket'].'/'.$prefixedPath;
+            }
+
+            return Storage::disk($disk)->url($path);
         }
 
         return request()->getSchemeAndHttpHost().'/storage/'.ltrim($path, '/');

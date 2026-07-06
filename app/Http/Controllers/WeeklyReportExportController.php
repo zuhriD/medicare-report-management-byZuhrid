@@ -30,7 +30,7 @@ class WeeklyReportExportController extends Controller
             $weeklyReport->report_number
         );
 
-        Storage::disk('public')->put($path, $pdf->output());
+        Storage::disk(config('filesystems.public_disk', 'public'))->put($path, $pdf->output());
 
         $weeklyReport->update([
             'generated_by_user_id' => $user->id,

@@ -15,6 +15,8 @@ return [
 
     'default' => env('FILESYSTEM_DISK', 'local'),
 
+    'public_disk' => env('FILESYSTEM_PUBLIC_DISK', 'public'),
+
     /*
     |--------------------------------------------------------------------------
     | Filesystem Disks
@@ -56,6 +58,19 @@ return [
             'url' => env('AWS_URL'),
             'endpoint' => env('AWS_ENDPOINT'),
             'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
+            'throw' => false,
+            'report' => false,
+        ],
+
+        'gcs' => [
+            'driver' => 'gcs',
+            'project_id' => env('GOOGLE_CLOUD_PROJECT_ID'),
+            'key_file' => env('GOOGLE_CLOUD_KEY_FILE'),
+            'key_file_json' => env('GOOGLE_CLOUD_KEY_FILE_JSON'),
+            'bucket' => env('GOOGLE_CLOUD_STORAGE_BUCKET'),
+            'path_prefix' => env('GOOGLE_CLOUD_STORAGE_PATH_PREFIX', ''),
+            'url' => env('GOOGLE_CLOUD_STORAGE_URL'),
+            'visibility' => env('GOOGLE_CLOUD_STORAGE_VISIBILITY', 'public'),
             'throw' => false,
             'report' => false,
         ],

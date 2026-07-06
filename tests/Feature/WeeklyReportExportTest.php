@@ -16,7 +16,7 @@ class WeeklyReportExportTest extends TestCase
 
     public function test_a_lead_can_export_a_weekly_report_pdf(): void
     {
-        Storage::fake('public');
+        Storage::fake(config('filesystems.public_disk', 'public'));
 
         $team = Team::query()->create(['name' => 'Backend Developer']);
         $lead = User::factory()->create([
@@ -51,6 +51,6 @@ class WeeklyReportExportTest extends TestCase
         $weeklyReport->refresh();
 
         $this->assertNotNull($weeklyReport->generated_pdf_path);
-        Storage::disk('public')->assertExists($weeklyReport->generated_pdf_path);
+        Storage::disk(config('filesystems.public_disk', 'public'))->assertExists($weeklyReport->generated_pdf_path);
     }
 }

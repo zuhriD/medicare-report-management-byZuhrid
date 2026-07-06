@@ -93,7 +93,7 @@ php artisan key:generate
 # 4. Konfigurasi database di .env, lalu migrate + seed
 php artisan migrate --seed
 
-# 5. Link storage (untuk file PDF hasil export)
+# 5. Link storage untuk local disk
 php artisan storage:link
 
 # 6. Buat user admin pertama
@@ -104,6 +104,22 @@ php artisan serve
 ```
 
 Akses panel admin di `http://localhost:8000/admin`.
+
+### Storage GCP
+
+Untuk simpan upload daily report dan PDF export ke Google Cloud Storage, set `.env` seperti ini:
+
+```env
+FILESYSTEM_PUBLIC_DISK=gcs
+GOOGLE_CLOUD_PROJECT_ID=your-gcp-project-id
+GOOGLE_CLOUD_STORAGE_BUCKET=your-bucket-name
+GOOGLE_CLOUD_KEY_FILE=/absolute/path/to/service-account.json
+GOOGLE_CLOUD_STORAGE_VISIBILITY=public
+```
+
+Jika credentials disediakan oleh runtime GCP, `GOOGLE_CLOUD_KEY_FILE` bisa dikosongkan. Jika bucket memakai CDN/custom domain, isi `GOOGLE_CLOUD_STORAGE_URL`.
+
+Dengan GCS, `php artisan storage:link` tidak diperlukan untuk file upload/export.
 
 ### Opsi B — Tanam ke project Laravel + Filament yang sudah ada
 
@@ -118,7 +134,7 @@ Akses panel admin di `http://localhost:8000/admin`.
    ```bash
    php artisan migrate
    php artisan db:seed --class=Database\\Seeders\\ReportSystemSeeder
-   php artisan storage:link
+   php artisan storage:link # hanya jika pakai FILESYSTEM_PUBLIC_DISK=public
    ```
 
 ---
