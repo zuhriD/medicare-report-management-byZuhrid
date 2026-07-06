@@ -18,6 +18,7 @@ use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Filesystem\FilesystemAdapter;
 
 class DailyReportResource extends Resource
 {
@@ -59,6 +60,21 @@ class DailyReportResource extends Resource
                     ->disk('public')
                     ->directory('daily-reports')
                     ->imagePreviewHeight('200')
+                    ->getUploadedFileUsing(function (FileUpload $component, string $file): ?array {
+                        /** @var FilesystemAdapter $storage */
+                        $storage = $component->getDisk();
+
+                        if (! $storage->exists($file)) {
+                            return null;
+                        }
+
+                        return [
+                            'name' => basename($file),
+                            'size' => $storage->size($file),
+                            'type' => $storage->mimeType($file),
+                            'url' => self::publicStorageUrl($file),
+                        ];
+                    })
                     ->maxSize(5120)
                     ->columnSpanFull(),
             ]);
@@ -83,7 +99,9 @@ class DailyReportResource extends Resource
                     ->toggleable(),
                 ImageColumn::make('image_path')
                     ->label('Image')
-                    ->disk('public')
+                    ->getStateUsing(fn (DailyReport $record): ?string => $record->image_path
+                        ? self::publicStorageUrl($record->image_path)
+                        : null)
                     ->square()
                     ->toggleable(),
                 TextColumn::make('progress_text')
@@ -105,6 +123,15 @@ class DailyReportResource extends Resource
     {
         return [
         ];
+    }
+
+    private static function publicStorageUrl(string $path): string
+    {
+        if (filter_var($path, FILTER_VALIDATE_URL) !== false) {
+            return $path;
+        }
+
+        return request()->getSchemeAndHttpHost().'/storage/'.ltrim($path, '/');
     }
 
     public static function getEloquentQuery(): Builder
